@@ -22,7 +22,7 @@ async function run() {
     await client.connect();
     const jobCollection = client.db("jobs");
     const jobs = jobCollection.collection("jobs");
-    const applicationCollection = jobCollection.collection("applications");
+    const applicationsCollection = jobCollection.collection("application");
 
     //get API
     app.get("/jobs", async (req, res) => {
@@ -39,9 +39,14 @@ async function run() {
       res.json(job);
     });
     app.post("/applications", async (req, res) => {
+      console.log("body", req.body);
+      console.log("file", req.files);
       const name = req.body.name;
-      const post = req.body.namePost;
+      const status = req.body.status;
       const email = req.body.email;
+      const namePost = req.body.namePost;
+      const vaccancy = req.body.vaccancy;
+      const id = req.body.job_id;
       const file = req.files.file;
       const fileData = file.data;
       const encodedFile = fileData.toString("base64");
@@ -49,18 +54,35 @@ async function run() {
       const application = {
         name,
         email,
-        post,
+        vaccancy,
+        namePost,
+        status,
+        id,
         file: fileBuffer,
       };
-      const result = await applicationCollection.insertOne(application);
-      console.log(result);
+      const result = await applicationsCollection.insertOne(application);
       res.json(result);
     });
-    //get applications
+    //get API
     app.get("/applications", async (req, res) => {
-      const cursor = applicationCollection.find({});
+      const cursor = applicationsCollection.find({});
       const application = await cursor.toArray();
       res.send(application);
+    });
+
+    app.put("/applications/:id", async (req, res) => {
+      const filter = { _id: ObjectId(req.params.id) };
+      const updateDoc = { $set: { status: "Accepted" } };
+      const result = await applicationsCollection.updateOne(filter, updateDoc);
+      res.json(result);
+    });
+    app.put("/job/:id", async (req, res) => {
+      console.log(req.params.id);
+      const filter = { _id: req.params.id };
+      console.log(req.body);
+      const updateDoc = { $inc: { vaccancy: -1 } };
+      const result = await jobs.updateOne(filter, updateDoc);
+      res.json(result);
     });
   } finally {
     //   await client.close();
